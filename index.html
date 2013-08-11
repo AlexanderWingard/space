@@ -1,0 +1,218 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>pixi.js example 1</title>
+<style>
+body {
+margin: 0;
+padding: 0;
+background-color: #000000;
+}
+</style>
+<script src="keydrown.min.js"></script>
+<script src="pixi.js"></script>
+<script src="stats.min.js"></script>
+</head>
+<body>
+<script>
+// /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --allow-file-access-from-files index.html
+var stats = new Stats();
+stats.setMode(0);
+stats.domElement.style.position = 'absolute';
+stats.domElement.style.left = '0px';
+stats.domElement.style.top = '0px';
+document.body.appendChild( stats.domElement );
+
+var h = window.innerHeight;
+var w = window.innerWidth;
+var NUM_STARS = 50;
+var MAX_VEL = 10;
+var stage = new PIXI.Stage(0x000000);
+var renderer = PIXI.autoDetectRenderer(w, h);
+document.body.appendChild(renderer.view);
+
+var playerTexture = PIXI.Texture.fromImage("player.png");
+var playerLeftTexture = PIXI.Texture.fromImage("playerLeft.png");
+var playerRightTexture = PIXI.Texture.fromImage("playerRight.png");
+var starTexture = PIXI.Texture.fromImage("starSmall.png");
+var meteorTexture = PIXI.Texture.fromImage("meteorBig.png");
+
+var player = new PIXI.Sprite(playerTexture);
+var velocity = 0;
+var angle = 0;
+player.anchor.x = 0.5;
+player.anchor.y = 0.5;
+// player.position.x = w / 2;
+// player.position.y = h / 2;
+
+var stars = new PIXI.DisplayObjectContainer();
+var world = new PIXI.DisplayObjectContainer();
+for(var i = 0; i < NUM_STARS; i++) {
+    var star = new PIXI.Sprite(starTexture);
+    star.position.x = Math.floor(Math.random() * w);
+    star.position.y = Math.floor(Math.random() * h);
+    star.rotation = Math.random() * 2 * Math.PI;
+    var scale = 0.4 + Math.random() * 0.8;
+    star.rscale = new PIXI.Point(scale, scale);
+    stars.addChild(star);
+}
+var meteor = new PIXI.Sprite(meteorTexture);
+meteor.anchor.x = 0.5;
+meteor.anchor.y = 0.5;
+
+var meteor2 = new PIXI.Sprite(meteorTexture);
+meteor2.anchor.x = 0.5;
+meteor2.anchor.y = 0.5;
+meteor2.position.x = 200;
+meteor2.position.y = 200;
+
+var meteor3 = new PIXI.Sprite(meteorTexture);
+meteor3.anchor.x = 0.5;
+meteor3.anchor.y = 0.5;
+meteor3.position.x = -200;
+meteor3.position.y = -200;
+
+
+// world.scale.x = 0.5;
+// world.scale.y = 0.5;
+world.position.x = w / 2;
+world.position.y = h / 2;
+world.addChild(meteor);
+world.addChild(meteor2);
+world.addChild(meteor3);
+world.addChild(player);
+
+// for(var i = 0; i < world.children.length; i++) {
+//     world.getChildAt(i).scale.x = 0.5;
+//     world.getChildAt(i).scale.y = 0.5;
+// }
+
+stage.addChild(stars);
+stage.addChild(world);
+// stage.addChild(player);         
+
+function draw() {
+    stats.begin();
+    kd.tick();
+
+    if (velocity > MAX_VEL) {
+        velocity = MAX_VEL;
+    } else if (velocity < -MAX_VEL) {
+        velocity = -MAX_VEL;
+    }
+    player.rotation = angle + Math.PI / 2;
+    // player.scale.x = 1 - velocity / MAX_VEL;
+    // player.scale.y = 1 - velocity / MAX_VEL;
+
+    var move = new PIXI.Point(velocity * Math.cos(angle), velocity * Math.sin(angle));
+    player.position.x += move.x;
+    player.position.y += move.y;
+
+    // if(player.position.x < w / 12 + velocity * 4) {
+    //     player.position.x = w / 12 + velocity * 4;
+    // } else if (player.position.x > w - w / 12 - velocity * 4) {
+    //     player.position.x = w - w / 12 - velocity * 4;
+    // }
+    // if(player.position.y < h / 12 + velocity * 4) {
+    //     player.position.y = h / 12 + velocity * 4;
+    // } else if (player.position.y > h - h / 12 - velocity * 4){
+    //     player.position.y = h - h / 12 - velocity * 4;
+    // }
+
+    // world.position.x -= move.x;
+    // world.position.y -= move.y;
+
+    // if(world.position.x + w/2 < w/2) {
+    //     var scale =  (w/2) / (world.position.x - w/2);
+    //     player.scale.x = scale;
+    //     player.scale.y = scale;
+    //     for(var i = 0; i < world.children.length; i++) {
+    //         world.getChildAt(i).scale.x = scale;
+    //         world.getChildAt(i).scale.y = scale;
+    //     }
+    //     world.position.x = world.position.x * scale; 
+    // }
+    // var scale = Math.sin(Date.now() / 1000) * 0.5 + 1;
+    var scalex = 1;
+    var scaley = 1;
+    var absx = Math.abs(player.position.x) + 100 ;
+    var absy = Math.abs(player.position.y) + 100 ;
+    if (absx > w / 2 ) {
+        scalex = (w/2) / absx;
+    }
+    if (absy > h / 2 ) {
+        scaley = (h/2) / absy;
+    }
+    var scale = Math.min(scalex, scaley);
+    world.scale.x = scale;
+    world.scale.y = scale;
+    for(var i = 0; i < stars.children.length; i++) {
+        var star = stars.getChildAt(i);
+        // star.scale.x = 1 - velocity / MAX_VEL;
+        // star.scale.y = 1 - velocity / MAX_VEL;
+
+        star.scale.x = star.rscale.x * scale;
+        star.scale.y = star.rscale.y * scale;
+
+        star.position.x += (0.2 * star.scale.x) * -move.x;
+        star.position.y += (0.2 * star.scale.y) * -move.y;
+        if(star.position.x > w) {
+            star.position.y = Math.random() * h;
+            star.position.x = 0;
+        } else if (star.position.x < 0) {
+            star.position.y = Math.random() * h;
+            star.position.x = w;
+        }
+        if(star.position.y > h) {
+            star.position.y = 0;
+            star.position.x = Math.random() * w;
+        } else if (star.position.y < 0) {
+            star.position.y = h;
+            star.position.x = Math.random() * w;
+        }
+    }
+
+    requestAnimFrame(draw);
+    renderer.render(stage);
+    stats.end();
+}
+requestAnimFrame( draw );
+
+kd.W.down(moveUp);
+kd.S.down(moveDown);
+kd.A.down(moveLeft);
+kd.D.down(moveRight);
+kd.A.up(releaseDirection);
+kd.D.up(releaseDirection);
+function moveUp(e) {
+    velocity += 0.1;
+}
+function moveDown(e) {
+    if (velocity > 0) {
+        velocity -= 1;
+    } else {
+        velocity -= 0.05;
+    }
+}
+function moveRight(e) {
+    player.setTexture(playerRightTexture);
+    angle += 0.1;
+}
+function moveLeft(e) {
+    player.setTexture(playerLeftTexture);
+    angle -= 0.1;
+}
+function releaseDirection(e) {
+    player.setTexture(playerTexture);
+}
+
+function resize()
+{
+    w = $(window).width() - 16;
+    h = $(window).height() - 16;
+
+    renderer.resize(w, h);
+}
+</script>
+</body>
+</html>
