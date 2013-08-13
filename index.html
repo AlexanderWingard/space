@@ -15,6 +15,7 @@ background-color: #000000;
 </head>
 <body>
 <script>
+// Stats
 var stats = new Stats();
 stats.setMode(0);
 stats.domElement.style.position = 'absolute';
@@ -22,6 +23,7 @@ stats.domElement.style.left = '0px';
 stats.domElement.style.top = '0px';
 document.body.appendChild( stats.domElement );
 
+// Pixi setup
 var h = window.innerHeight;
 var w = window.innerWidth;
 var NUM_STARS = 50;
@@ -36,17 +38,45 @@ var playerRightTexture = PIXI.Texture.fromImage("playerRight.png");
 var starTexture = PIXI.Texture.fromImage("starSmall.png");
 var meteorTexture = PIXI.Texture.fromImage("meteorBig.png");
 
-var player = new PIXI.Sprite(playerTexture);
-player.velocity = 0;
-player.angle = 0;
-player.anchor.x = 0.5;
-player.anchor.y = 0.5;
+function Player(up, left, down, right) {
+    PIXI.Sprite.call(this, playerTexture);
+    this.velocity = 0;
+    this.angle = 0;
+    this.anchor.x = 0.5;
+    this.anchor.y = 0.5;
 
-var player2 = new PIXI.Sprite(playerTexture);
-player2.velocity = 0;
-player2.angle = 0;
-player2.anchor.x = 0.5;
-player2.anchor.y = 0.5;
+    var t = this
+    kd[up].down(function() {
+        t.velocity += 0.1;
+    })
+    kd[down].down(function() {
+        if (t.velocity > 0) {
+            t.velocity -= 1;
+        } else {
+            t.velocity -= 0.05;
+        }
+    })
+    kd[left].down(function() {
+        t.setTexture(playerRightTexture);
+        t.angle -= 0.1;
+    })
+    kd[right].down(function () {
+        t.setTexture(playerLeftTexture);
+        t.angle += 0.1;
+    })
+    kd[left].up(function() {
+        player.setTexture(playerTexture);
+    })
+    kd[right].up(function() {
+        player.setTexture(playerTexture);
+    })
+}
+
+
+Player.prototype = Object.create(PIXI.Sprite.prototype);
+
+var player = new Player("W", "A", "S", "D");
+var player2 = new Player("UP", "LEFT", "DOWN", "RIGHT");
 
 var stars = new PIXI.DisplayObjectContainer();
 var world = new PIXI.DisplayObjectContainer();
@@ -63,23 +93,9 @@ var meteor = new PIXI.Sprite(meteorTexture);
 meteor.anchor.x = 0.5;
 meteor.anchor.y = 0.5;
 
-var meteor2 = new PIXI.Sprite(meteorTexture);
-meteor2.anchor.x = 0.5;
-meteor2.anchor.y = 0.5;
-meteor2.position.x = 200;
-meteor2.position.y = 200;
-
-var meteor3 = new PIXI.Sprite(meteorTexture);
-meteor3.anchor.x = 0.5;
-meteor3.anchor.y = 0.5;
-meteor3.position.x = -200;
-meteor3.position.y = -200;
-
 world.position.x = w / 2;
 world.position.y = h / 2;
 world.addChild(meteor);
-world.addChild(meteor2);
-world.addChild(meteor3);
 world.addChild(player);
 world.addChild(player2);
 
@@ -95,9 +111,9 @@ function draw() {
     } else if (player.velocity < -MAX_VEL) {
         player.velocity = -MAX_VEL;
     }
-    player.rotation = player.angle + Math.PI / 2;
+    player.rotation = player.angle;
 
-    var move = new PIXI.Point(player.velocity * Math.cos(player.angle), player.velocity * Math.sin(player.angle));
+    var move = new PIXI.Point(player.velocity * Math.cos(player.angle - Math.PI / 2), player.velocity * Math.sin(player.angle - Math.PI / 2));
     player.position.x += move.x;
     player.position.y += move.y;
 
@@ -169,62 +185,6 @@ function draw() {
     stats.end();
 }
 requestAnimFrame( draw );
-
-kd.W.down(moveUp);
-kd.S.down(moveDown);
-kd.A.down(moveLeft);
-kd.D.down(moveRight);
-kd.A.up(releaseDirection);
-kd.D.up(releaseDirection);
-function moveUp(e) {
-    player.velocity += 0.1;
-}
-function moveDown(e) {
-    if (player.velocity > 0) {
-        player.velocity -= 1;
-    } else {
-        player.velocity -= 0.05;
-    }
-}
-function moveRight(e) {
-    player.setTexture(playerRightTexture);
-    player.angle += 0.1;
-}
-function moveLeft(e) {
-    player.setTexture(playerLeftTexture);
-    player.angle -= 0.1;
-}
-function releaseDirection(e) {
-    player.setTexture(playerTexture);
-}
-
-kd.UP.down(moveUp2);
-kd.DOWN.down(moveDown2);
-kd.LEFT.down(moveLeft2);
-kd.RIGHT.down(moveRight2);
-kd.LEFT.up(releaseDirection2);
-kd.RIGHT.up(releaseDirection2);
-function moveUp2(e) {
-    player2.velocity += 0.1;
-}
-function moveDown2(e) {
-    if (player2.velocity > 0) {
-        player2.velocity -= 1;
-    } else {
-        player2.velocity -= 0.05;
-    }
-}
-function moveRight2(e) {
-    player2.setTexture(playerRightTexture);
-    player2.angle += 0.1;
-}
-function moveLeft2(e) {
-    player2.setTexture(playerLeftTexture);
-    player2.angle -= 0.1;
-}
-function releaseDirection2(e) {
-    player2.setTexture(playerTexture);
-}
 
 function resize()
 {
