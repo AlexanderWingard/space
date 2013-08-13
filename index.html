@@ -15,7 +15,6 @@ background-color: #000000;
 </head>
 <body>
 <script>
-// /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --allow-file-access-from-files index.html
 var stats = new Stats();
 stats.setMode(0);
 stats.domElement.style.position = 'absolute';
@@ -38,12 +37,16 @@ var starTexture = PIXI.Texture.fromImage("starSmall.png");
 var meteorTexture = PIXI.Texture.fromImage("meteorBig.png");
 
 var player = new PIXI.Sprite(playerTexture);
-var velocity = 0;
-var angle = 0;
+player.velocity = 0;
+player.angle = 0;
 player.anchor.x = 0.5;
 player.anchor.y = 0.5;
-// player.position.x = w / 2;
-// player.position.y = h / 2;
+
+var player2 = new PIXI.Sprite(playerTexture);
+player2.velocity = 0;
+player2.angle = 0;
+player2.anchor.x = 0.5;
+player2.anchor.y = 0.5;
 
 var stars = new PIXI.DisplayObjectContainer();
 var world = new PIXI.DisplayObjectContainer();
@@ -72,67 +75,46 @@ meteor3.anchor.y = 0.5;
 meteor3.position.x = -200;
 meteor3.position.y = -200;
 
-
-// world.scale.x = 0.5;
-// world.scale.y = 0.5;
 world.position.x = w / 2;
 world.position.y = h / 2;
 world.addChild(meteor);
 world.addChild(meteor2);
 world.addChild(meteor3);
 world.addChild(player);
-
-// for(var i = 0; i < world.children.length; i++) {
-//     world.getChildAt(i).scale.x = 0.5;
-//     world.getChildAt(i).scale.y = 0.5;
-// }
+world.addChild(player2);
 
 stage.addChild(stars);
 stage.addChild(world);
-// stage.addChild(player);         
 
 function draw() {
     stats.begin();
     kd.tick();
 
-    if (velocity > MAX_VEL) {
-        velocity = MAX_VEL;
-    } else if (velocity < -MAX_VEL) {
-        velocity = -MAX_VEL;
+    if (player.velocity > MAX_VEL) {
+        player.velocity = MAX_VEL;
+    } else if (player.velocity < -MAX_VEL) {
+        player.velocity = -MAX_VEL;
     }
-    player.rotation = angle + Math.PI / 2;
-    // player.scale.x = 1 - velocity / MAX_VEL;
-    // player.scale.y = 1 - velocity / MAX_VEL;
+    player.rotation = player.angle + Math.PI / 2;
 
-    var move = new PIXI.Point(velocity * Math.cos(angle), velocity * Math.sin(angle));
+    var move = new PIXI.Point(player.velocity * Math.cos(player.angle), player.velocity * Math.sin(player.angle));
     player.position.x += move.x;
     player.position.y += move.y;
 
-    // if(player.position.x < w / 12 + velocity * 4) {
-    //     player.position.x = w / 12 + velocity * 4;
-    // } else if (player.position.x > w - w / 12 - velocity * 4) {
-    //     player.position.x = w - w / 12 - velocity * 4;
-    // }
-    // if(player.position.y < h / 12 + velocity * 4) {
-    //     player.position.y = h / 12 + velocity * 4;
-    // } else if (player.position.y > h - h / 12 - velocity * 4){
-    //     player.position.y = h - h / 12 - velocity * 4;
-    // }
+    if (player2.velocity > MAX_VEL) {
+        player2.velocity = MAX_VEL;
+    } else if (player2.velocity < -MAX_VEL) {
+        player2.velocity = -MAX_VEL;
+    }
+    player2.rotation = player2.angle + Math.PI / 2;
 
-    // world.position.x -= move.x;
-    // world.position.y -= move.y;
+    var move2 = new PIXI.Point(player2.velocity * Math.cos(player2.angle), player2.velocity * Math.sin(player2.angle));
+    player2.position.x += move2.x;
+    player2.position.y += move2.y;
 
-    // if(world.position.x + w/2 < w/2) {
-    //     var scale =  (w/2) / (world.position.x - w/2);
-    //     player.scale.x = scale;
-    //     player.scale.y = scale;
-    //     for(var i = 0; i < world.children.length; i++) {
-    //         world.getChildAt(i).scale.x = scale;
-    //         world.getChildAt(i).scale.y = scale;
-    //     }
-    //     world.position.x = world.position.x * scale; 
-    // }
-    // var scale = Math.sin(Date.now() / 1000) * 0.5 + 1;
+    move.x += move2.x;
+    move.y += move2.y;
+
     var scalex = 1;
     var scaley = 1;
     var absx = Math.abs(player.position.x) + 100 ;
@@ -143,13 +125,23 @@ function draw() {
     if (absy > h / 2 ) {
         scaley = (h/2) / absy;
     }
-    var scale = Math.min(scalex, scaley);
+
+    var scalex2 = 1;
+    var scaley2 = 1;
+    var absx2 = Math.abs(player2.position.x) + 100 ;
+    var absy2 = Math.abs(player2.position.y) + 100 ;
+    if (absx2 > w / 2 ) {
+        scalex2 = (w/2) / absx2;
+    }
+    if (absy2 > h / 2 ) {
+        scaley2 = (h/2) / absy2;
+    }
+
+    var scale = Math.min(scalex, scaley, scalex2, scaley2);
     world.scale.x = scale;
     world.scale.y = scale;
     for(var i = 0; i < stars.children.length; i++) {
         var star = stars.getChildAt(i);
-        // star.scale.x = 1 - velocity / MAX_VEL;
-        // star.scale.y = 1 - velocity / MAX_VEL;
 
         star.scale.x = star.rscale.x * scale;
         star.scale.y = star.rscale.y * scale;
@@ -185,25 +177,53 @@ kd.D.down(moveRight);
 kd.A.up(releaseDirection);
 kd.D.up(releaseDirection);
 function moveUp(e) {
-    velocity += 0.1;
+    player.velocity += 0.1;
 }
 function moveDown(e) {
-    if (velocity > 0) {
-        velocity -= 1;
+    if (player.velocity > 0) {
+        player.velocity -= 1;
     } else {
-        velocity -= 0.05;
+        player.velocity -= 0.05;
     }
 }
 function moveRight(e) {
     player.setTexture(playerRightTexture);
-    angle += 0.1;
+    player.angle += 0.1;
 }
 function moveLeft(e) {
     player.setTexture(playerLeftTexture);
-    angle -= 0.1;
+    player.angle -= 0.1;
 }
 function releaseDirection(e) {
     player.setTexture(playerTexture);
+}
+
+kd.UP.down(moveUp2);
+kd.DOWN.down(moveDown2);
+kd.LEFT.down(moveLeft2);
+kd.RIGHT.down(moveRight2);
+kd.LEFT.up(releaseDirection2);
+kd.RIGHT.up(releaseDirection2);
+function moveUp2(e) {
+    player2.velocity += 0.1;
+}
+function moveDown2(e) {
+    if (player2.velocity > 0) {
+        player2.velocity -= 1;
+    } else {
+        player2.velocity -= 0.05;
+    }
+}
+function moveRight2(e) {
+    player2.setTexture(playerRightTexture);
+    player2.angle += 0.1;
+}
+function moveLeft2(e) {
+    player2.setTexture(playerLeftTexture);
+    player2.angle -= 0.1;
+}
+function releaseDirection2(e) {
+    player2.setTexture(playerTexture);
 }
 
 function resize()
