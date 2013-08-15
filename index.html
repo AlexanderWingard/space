@@ -46,6 +46,8 @@ function Player(up, left, down, right) {
     this.anchor.y = 0.5;
     this.moveV = new PIXI.Point(0,0);
 
+    world.addChild(this);
+
     var t = this
     kd[up].down(function() {
         if(t.velocity < MAX_VEL) {
@@ -82,11 +84,11 @@ Player.prototype.move = function() {
     this.position.y += this.moveV.y;
 }
 
-var player = new Player("W", "A", "S", "D");
-var player2 = new Player("UP", "LEFT", "DOWN", "RIGHT");
+var players = new Array();
 
 var stars = new PIXI.DisplayObjectContainer();
 var world = new PIXI.DisplayObjectContainer();
+
 for(var i = 0; i < NUM_STARS; i++) {
     var star = new PIXI.Sprite(starTexture);
     star.position.x = Math.floor(Math.random() * w);
@@ -107,8 +109,10 @@ debug.position.y = h;
 world.position.x = w / 2;
 world.position.y = h / 2;
 world.addChild(meteor);
-world.addChild(player);
-world.addChild(player2);
+
+players.push(new Player("W", "A", "S", "D"));
+players.push(new Player("UP", "LEFT", "DOWN", "RIGHT"));
+// players.push(new Player("Y", "G", "H", "J"));
 
 stage.addChild(stars);
 stage.addChild(debug);
@@ -122,44 +126,35 @@ function draw() {
 
     move.x = 0;
     move.y = 0;
+    center.x = 0;
+    center.y = 0;
 
-    player.move();
-    player2.move();
+    for(var i = 0; i < players.length; i ++) {
+        players[i].move();
 
-    move.x += player.moveV.x;
-    move.y += player.moveV.y;
-    move.x += player2.moveV.x;
-    move.y += player2.moveV.y;
+        move.x += players[i].moveV.x;
+        move.y += players[i].moveV.y;
 
-    center.x = (player.position.x + player2.position.x) / 2;
-    center.y = (player.position.y + player2.position.y) / 2;
+        center.x += players[i].position.x;
+        center.y += players[i].position.y;
+    }
+
+    center.x = center.x / players.length;
+    center.y = center.y / players.length;
     var cx = (w/2) + Math.abs(center.x) * world.scale.x;
     var cy = (h/2) + Math.abs(center.y) * world.scale.y;
-
-    var scalex = 1;
-    var scaley = 1;
-    var absx = Math.abs(player.position.x) + 100 ;
-    var absy = Math.abs(player.position.y) + 100 ;
-    if (absx > cx ) {
-        scalex = cx / absx;
+    var scale = 1;
+    for(var i = 0; i < players.length; i++) {
+        var absx = Math.abs(players[i].position.x) + 100 ;
+        var absy = Math.abs(players[i].position.y) + 100 ;
+        if (absx > cx) {
+            scale = Math.min(scale, cx/absx);
+        }
+        if (absy > cy) {
+            scale = Math.min(scale, cy/absy);
+        }
     }
-    if (absy > cy ) {
-        scaley = cy / absy;
-    }
-
-    var scalex2 = 1;
-    var scaley2 = 1;
-    var absx2 = Math.abs(player2.position.x) + 100 ;
-    var absy2 = Math.abs(player2.position.y) + 100 ;
-    if (absx2 > cx ) {
-        scalex2 = cx / absx2;
-    }
-    if (absy2 > cy ) {
-        scaley2 = cy / absy2;
-    }
-
-    var scale = Math.min(scalex, scaley, scalex2, scaley2);
-    debug.setText("w: " + Math.floor(w/scale) + " h: " + Math.floor(h/scale));
+    debug.setText(scale);
     world.scale.x = scale;
     world.scale.y = scale;
     world.position.x = w/2 - center.x * scale;
