@@ -33,6 +33,12 @@ var stage = new PIXI.Stage(0x000000);
 var renderer = PIXI.autoDetectRenderer(w, h);
 document.body.appendChild(renderer.view);
 
+stage.setInteractive(true);
+stage.tap = function(data) {
+    players[0].rotation = Math.atan2(data.global.x - w/2, -1 * (data.global.y - h/2));
+    players[0].velocity = MAX_VEL;
+}
+
 var playerTexture = PIXI.Texture.fromImage("player.png");
 var playerLeftTexture = PIXI.Texture.fromImage("playerLeft.png");
 var playerRightTexture = PIXI.Texture.fromImage("playerRight.png");
