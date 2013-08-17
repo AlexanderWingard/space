@@ -169,8 +169,8 @@ function draw() {
     for(var i = 0; i < stars.children.length; i++) {
         var star = stars.getChildAt(i);
 
-        star.scale.x = star.rscale.x * scale;
-        star.scale.y = star.rscale.y * scale;
+        star.scale.x = star.rscale.x * scale + 0.3 * (1-scale);
+        star.scale.y = star.rscale.y * scale + 0.3 * (1-scale);
 
         star.position.x += (0.2 * star.scale.x) * -move.x;
         star.position.y += (0.2 * star.scale.y) * -move.y;
