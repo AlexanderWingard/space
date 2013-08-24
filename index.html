@@ -31,6 +31,7 @@ var NUM_STARS = 50;
 var MAX_VEL = 10;
 var stage = new PIXI.Stage(0x000000);
 var renderer = PIXI.autoDetectRenderer(w, h);
+var frameCount = 0;
 document.body.appendChild(renderer.view);
 
 stage.setInteractive(true);
@@ -40,22 +41,70 @@ stage.tap = function(data) {
 }
 
 var playerTexture = PIXI.Texture.fromImage("player.png");
-var playerLeftTexture = PIXI.Texture.fromImage("playerLeft.png");
-var playerRightTexture = PIXI.Texture.fromImage("playerRight.png");
-var starTexture = PIXI.Texture.fromImage("starSmall.png");
+var starTexture = PIXI.Texture.fromImage("starBig.png");
 var meteorTexture = PIXI.Texture.fromImage("meteorBig.png");
+var shotTexture = PIXI.Texture.fromImage("laserRed.png");
+var sparkTexture = PIXI.Texture.fromImage("spark.png");
 
-function Player(up, left, down, right) {
-    PIXI.Sprite.call(this, playerTexture);
+function Movable(Texture) {
+    PIXI.Sprite.call(this, Texture);
     this.velocity = 0;
     this.anchor.x = 0.5;
     this.anchor.y = 0.5;
     this.moveV = new PIXI.Point(0,0);
+    this.owner;
+}
+Movable.prototype = Object.create(PIXI.Sprite.prototype);
+Movable.prototype.move = function() {
+    this.moveV.x = this.velocity * Math.cos(this.rotation - Math.PI / 2);
+    this.moveV.y = this.velocity * Math.sin(this.rotation - Math.PI / 2);
+    this.position.x += this.moveV.x;
+    this.position.y += this.moveV.y;
+}
+
+function Spark(player) {
+    Movable.call(this, sparkTexture);
+    this.position = player.position.clone();
+    this.rotation = player.rotation + Math.PI + (Math.random() - 0.5) / 0.5;
+    this.scale.x = 0.2 + Math.random()*0.8;
+    this.scale.y = this.scale.x;
+    this.velocity = MAX_VEL / 20;
+    world.addChildAt(this,0);
+}
+Spark.prototype = Object.create(Movable.prototype);
+Spark.prototype.move = function() {
+    Movable.prototype.move.call(this);
+    this.scale.x = this.scale.x * 0.998;
+    this.scale.y = this.scale.x;
+    if(this.scale.x < 0.3) {
+        this.visible = false;
+    }
+}
+
+function Player(up, left, down, right, shoot) {
+    Movable.call(this, playerTexture);
+    this.lastShot = 0;
+    this.lastSpark = 0;
 
     world.addChild(this);
 
     var t = this
+    kd[shoot].down(function() {
+        if(frameCount - t.lastShot > 10) {
+            t.lastShot = frameCount;
+            var shot = new Movable(shotTexture);
+            shot.owner = t;
+            shot.position = t.position.clone();
+            shot.rotation = t.rotation;
+            shot.velocity = MAX_VEL * 2;
+            world.addChildAt(shot, 0);
+        }
+    })
     kd[up].down(function() {
+        if (frameCount - t.lastSpark > 5) {
+            t.lastSpark = frameCount;
+            var spark = new Spark(t);
+        }
         if(t.velocity < MAX_VEL) {
             t.velocity += 0.1;
         }
@@ -68,27 +117,13 @@ function Player(up, left, down, right) {
         }
     })
     kd[left].down(function() {
-        t.setTexture(playerRightTexture);
         t.rotation -= 0.1;
     })
     kd[right].down(function () {
-        t.setTexture(playerLeftTexture);
         t.rotation += 0.1;
     })
-    kd[left].up(function() {
-        t.setTexture(playerTexture);
-    })
-    kd[right].up(function() {
-        t.setTexture(playerTexture);
-    })
 }
-Player.prototype = Object.create(PIXI.Sprite.prototype);
-Player.prototype.move = function() {
-    this.moveV.x = this.velocity * Math.cos(this.rotation - Math.PI / 2);
-    this.moveV.y = this.velocity * Math.sin(this.rotation - Math.PI / 2);
-    this.position.x += this.moveV.x;
-    this.position.y += this.moveV.y;
-}
+Player.prototype = Object.create(Movable.prototype);
 
 var players = new Array();
 
@@ -100,13 +135,15 @@ for(var i = 0; i < NUM_STARS; i++) {
     star.position.x = Math.floor(Math.random() * w);
     star.position.y = Math.floor(Math.random() * h);
     star.rotation = Math.random() * 2 * Math.PI;
-    var scale = 0.4 + Math.random() * 0.8;
+    var scale = 0.2 + Math.random() * 0.6;
     star.rscale = new PIXI.Point(scale, scale);
     stars.addChild(star);
 }
-var meteor = new PIXI.Sprite(meteorTexture);
+var meteor = new Movable(meteorTexture);
 meteor.anchor.x = 0.5;
 meteor.anchor.y = 0.5;
+meteor.scale.x = 0.3;
+meteor.scale.y = 0.3;
 
 var debug = new PIXI.Text("debug...",{font:"12px Arial", fill:"blue"});
 debug.anchor.y = 1.0;
@@ -116,17 +153,21 @@ world.position.x = w / 2;
 world.position.y = h / 2;
 world.addChild(meteor);
 
-players.push(new Player("W", "A", "S", "D"));
-players.push(new Player("UP", "LEFT", "DOWN", "RIGHT"));
-// players.push(new Player("Y", "G", "H", "J"));
+players.push(new Player("W", "A", "S", "D", "Q"));
+players.push(new Player("UP", "LEFT", "DOWN", "RIGHT", "SPACE"));
+players[1].rotation = Math.PI / 2;
+//players.push(new Player("Y", "G", "H", "J", "T"));
 
 stage.addChild(stars);
 stage.addChild(debug);
 stage.addChild(world);
 var move = new PIXI.Point(0,0);
 var center = new PIXI.Point(0,0);
+var minBound = new PIXI.Point(0,0);
+var maxBound = new PIXI.Point(0,0);
 
 function draw() {
+    frameCount++;
     stats.begin();
     kd.tick();
 
@@ -136,17 +177,15 @@ function draw() {
     center.y = 0;
 
     for(var i = 0; i < players.length; i ++) {
-        players[i].move();
-
         move.x += players[i].moveV.x;
         move.y += players[i].moveV.y;
 
         center.x += players[i].position.x;
         center.y += players[i].position.y;
     }
-
     center.x = center.x / players.length;
     center.y = center.y / players.length;
+
     var cx = (w/2) + Math.abs(center.x) * world.scale.x;
     var cy = (h/2) + Math.abs(center.y) * world.scale.y;
     var scale = 1;
@@ -160,11 +199,38 @@ function draw() {
             scale = Math.min(scale, cy/absy);
         }
     }
-    debug.setText(scale);
+
     world.scale.x = scale;
     world.scale.y = scale;
     world.position.x = w/2 - center.x * scale;
     world.position.y = h/2 - center.y * scale;
+    maxBound.x = center.x + w/2/scale;
+    maxBound.y = center.y + h/2/scale;
+    minBound.x = center.x - w/2/scale;
+    minBound.y = center.y - h/2/scale;
+
+    debug.setText(world.children.length);
+    for(var i = 0; i < world.children.length; i++) {
+        var c1 = world.getChildAt(i);
+        c1.move();
+        for(var j = i+1; j < world.children.length; j++) {
+            var c2 = world.getChildAt(j);
+            if(c1.owner != c2 && c2.owner != c1) {
+                var dx = c1.position.x - c2.position.x;
+                var dy = c1.position.y - c2.position.y;
+                var radi = (c1.width + c2.width)/2;
+                if(dx * dx + dy * dy < radi * radi) {
+                    // Collision
+                }
+            }
+        }
+        if (c1.position.x > maxBound.x ||
+            c1.position.y > maxBound.y ||
+            c1.position.x < minBound.x  ||
+            c1.position.y < minBound.y) {
+            // Out of bounds
+        }
+    }
 
     for(var i = 0; i < stars.children.length; i++) {
         var star = stars.getChildAt(i);
