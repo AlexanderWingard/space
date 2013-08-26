@@ -81,6 +81,18 @@ Spark.prototype.move = function() {
     }
 }
 
+function Meteor() {
+    Movable.call(this, meteorTexture);
+    this.position.x = Math.random() * w - w/2;
+    this.position.y = Math.random() * h - h/2;
+    this.scale.x = Math.random() * 0.6 + 0.4;
+    this.scale.y = this.scale.x;
+    this.rotation = Math.random() * 2 * Math.PI;
+    this.velocity = MAX_VEL / 50;
+    world.addChild(this);
+}
+Meteor.prototype = Object.create(Movable.prototype);
+
 function Player(up, left, down, right, shoot) {
     Movable.call(this, playerTexture);
     this.lastShot = 0;
@@ -139,11 +151,11 @@ for(var i = 0; i < NUM_STARS; i++) {
     star.rscale = new PIXI.Point(scale, scale);
     stars.addChild(star);
 }
-var meteor = new Movable(meteorTexture);
-meteor.anchor.x = 0.5;
-meteor.anchor.y = 0.5;
-meteor.scale.x = 0.3;
-meteor.scale.y = 0.3;
+
+for(var i = 0; i < 10; i++) {
+    new Meteor();
+}
+
 
 var debug = new PIXI.Text("debug...",{font:"12px Arial", fill:"blue"});
 debug.anchor.y = 1.0;
@@ -151,7 +163,6 @@ debug.position.y = h;
 
 world.position.x = w / 2;
 world.position.y = h / 2;
-world.addChild(meteor);
 
 players.push(new Player("W", "A", "S", "D", "Q"));
 players.push(new Player("UP", "LEFT", "DOWN", "RIGHT", "SPACE"));
@@ -209,7 +220,6 @@ function draw() {
     minBound.x = center.x - w/2/scale;
     minBound.y = center.y - h/2/scale;
 
-    debug.setText(world.children.length);
     for(var i = 0; i < world.children.length; i++) {
         var c1 = world.getChildAt(i);
         c1.move();
