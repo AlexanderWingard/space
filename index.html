@@ -152,6 +152,7 @@ for(var i = 0; i < NUM_STARS; i++) {
     stars.addChild(star);
 }
 
+var meteors = 10;
 for(var i = 0; i < 10; i++) {
     new Meteor();
 }
@@ -220,6 +221,29 @@ function draw() {
     minBound.x = center.x - w/2/scale;
     minBound.y = center.y - h/2/scale;
 
+    while(meteors < 10 / scale) {
+        meteors++;
+        var met = new Meteor();
+
+        if(Math.random() <= 0.5) {
+            if(Math.random() <= 0.5) {
+                met.position.x = minBound.x - 100;
+            } else {
+                met.position.x = maxBound.x + 100;
+            }
+            met.position.y = Math.random() * (maxBound.y - minBound.y) + minBound.y;
+        } else {
+            if(Math.random() <= 0.5) {
+                met.position.y = minBound.y - 100;
+            } else {
+                met.position.y = maxBound.y + 100;
+            }
+            met.position.x = Math.random() * (maxBound.x - minBound.x) + minBound.x;
+        }
+    }
+
+    debug.setText(meteors);
+    var remove = new Array();
     for(var i = 0; i < world.children.length; i++) {
         var c1 = world.getChildAt(i);
         c1.move();
@@ -234,12 +258,20 @@ function draw() {
                 }
             }
         }
-        if (c1.position.x > maxBound.x ||
-            c1.position.y > maxBound.y ||
-            c1.position.x < minBound.x  ||
-            c1.position.y < minBound.y) {
+        if (c1.position.x > maxBound.x + 100 ||
+            c1.position.y > maxBound.y + 100||
+            c1.position.x < minBound.x - 100 ||
+            c1.position.y < minBound.y - 100) {
+            remove.push(c1);
             // Out of bounds
         }
+    }
+
+    for(var i = 0; i < remove.length; i++) {
+        if(remove[i] instanceof Meteor) {
+            meteors--;
+        }
+        world.removeChild(remove[i]);
     }
 
     for(var i = 0; i < stars.children.length; i++) {
