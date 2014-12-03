@@ -198,18 +198,11 @@ function draw() {
     center.x = center.x / players.length;
     center.y = center.y / players.length;
 
-    var cx = (w/2) + Math.abs(center.x) * world.scale.x;
-    var cy = (h/2) + Math.abs(center.y) * world.scale.y;
     var scale = 1;
     for(var i = 0; i < players.length; i++) {
-        var absx = Math.abs(players[i].position.x) + 100 ;
-        var absy = Math.abs(players[i].position.y) + 100 ;
-        if (absx > cx) {
-            scale = Math.min(scale, cx/absx);
-        }
-        if (absy > cy) {
-            scale = Math.min(scale, cy/absy);
-        }
+        var absx = (w/2) / (Math.abs(players[i].position.x - center.x) + w/2);
+        var absy = (h/2) / (Math.abs(players[i].position.y - center.y) + h/2);
+        scale = Math.min(scale, absx, absy);
     }
 
     world.scale.x = scale;
